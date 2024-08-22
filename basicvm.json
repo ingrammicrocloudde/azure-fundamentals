@@ -55,11 +55,11 @@
     },
     "osdiskname_prd": {
       "type": "string",
-      "defaultValue": "prd_osdisk"
+      "defaultValue": "osdisk"
     },
     "datadiskname_prd": {
       "type": "string",
-      "defaultValue": "vmprd_datadisk"
+      "defaultValue": "datadisk"
     }
   },
   "variables": {
@@ -159,12 +159,12 @@
     },
     {
       "copy": {
-        "name": "serverprd",
+        "name": "server",
         "count": "[length(range(0, parameters('numberOfInstances')))]"
       },
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2020-12-01",
-      "name": "[format('serverprd{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
+      "name": "[format('server{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
       "location": "[parameters('location')]",
       "properties": {
         "hardwareProfile": {
