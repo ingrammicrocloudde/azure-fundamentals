@@ -12,6 +12,6 @@ Although BICEP is now the preferred way of creating Azure deployments as code (I
 
 Hit this button to deploy the ARM template as seen in this repository:
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fingrammicrocloudde%2Fazure-fundamentals%2Fdev%2Fbasicvm.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fingrammicrocloudde%2Fazure-fundamentals%2Fmain%2Fbasicvm.json)
 
 Just log in to the Azure portal and deploy.
