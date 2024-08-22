@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "northeurope"
+       },
+        "adminUsername": {
+            "value": "azureuser"
+        },
+        "adminPassword": {
+            "value": "deletemelater123"
+        },
+        "vmSize": {
+            "value": "Standard_D2s_v5"
+        },
+        "imagePublisher": {
+            "value": "MicrosoftWindowsServer"
+        },
+        "imageOffer": {
+            "value": "WindowsServer"
+        },
+        "imageSKU": {
+            "value": "2022-Datacenter"
+        },
+        "numberOfInstances": {
+            "value": 1
+        },
+        "networkInterfaceName": {
+            "value": "nic"
+        },
+        "osdiskname_prd": {
+            "value": "prd_osdisk"
+        },
+        "datadiskname_prd": {
+            "value": "vmprd_datadisk"
+        }
+    }
+}

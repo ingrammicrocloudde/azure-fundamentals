@@ -1,0 +1,219 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.29.47.4906",
+      "templateHash": "13363929220794202032"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "northeurope"
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Administrator of the new VM and Domain"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password for the Administrator account of the new VM and Domain"
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2s_v5"
+    },
+    "imagePublisher": {
+      "type": "string",
+      "defaultValue": "MicrosoftWindowsServer"
+    },
+    "imageOffer": {
+      "type": "string",
+      "defaultValue": "WindowsServer"
+    },
+    "imageSKU": {
+      "type": "string",
+      "defaultValue": "2022-Datacenter",
+      "allowedValues": [
+        "2019-Datacenter",
+        "2022-Datacenter"
+      ]
+    },
+    "numberOfInstances": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "networkInterfaceName": {
+      "type": "string",
+      "defaultValue": "nic"
+    },
+    "osdiskname_prd": {
+      "type": "string",
+      "defaultValue": "prd_osdisk"
+    },
+    "datadiskname_prd": {
+      "type": "string",
+      "defaultValue": "vmprd_datadisk"
+    }
+  },
+  "variables": {
+    "nsgrules": {
+      "securityrules": [
+        {
+          "name": "IN_Ping_ALLOW",
+          "properties": {
+            "access": "Allow",
+            "description": "Allow PING from VNET",
+            "destinationAddressPrefix": "VirtualNetwork",
+            "destinationPortRange": "*",
+            "direction": "inbound",
+            "priority": 300,
+            "protocol": "Icmp",
+            "sourceAddressPrefix": "VirtualNetwork",
+            "sourcePortRange": "*"
+          }
+        }
+      ]
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-05-01",
+      "name": "Vnet03",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.3.0.0/16"
+          ]
+        },
+        "subnets": [],
+        "enableDdosProtection": false,
+        "enableVmProtection": true
+      }
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', 'Vnet03', 'serversubnet')]",
+      "properties": {
+        "addressPrefix": "10.3.0.0/24",
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'networkSecurityGroup')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', 'networkSecurityGroup')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', 'Vnet03')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2023-11-01",
+      "name": "networkSecurityGroup",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": "[variables('nsgrules').securityrules]"
+      }
+    },
+    {
+      "copy": {
+        "name": "nicNameprd",
+        "count": "[length(range(0, parameters('numberOfInstances')))]"
+      },
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-11-01",
+      "name": "[format('prod-server-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'Vnet03', 'serversubnet')]"
+              },
+              "primary": true,
+              "privateIPAddressVersion": "IPv4"
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        },
+        "enableAcceleratedNetworking": false,
+        "enableIPForwarding": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'Vnet03', 'serversubnet')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', 'Vnet03')]"
+      ]
+    },
+    {
+      "copy": {
+        "name": "serverprd",
+        "count": "[length(range(0, parameters('numberOfInstances')))]"
+      },
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2020-12-01",
+      "name": "[format('serverprd{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[format('prdsrv-{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "provisionVMAgent": true
+          }
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[parameters('imagePublisher')]",
+            "offer": "[parameters('imageOffer')]",
+            "sku": "[parameters('imageSKU')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "[format('{0}{1}', parameters('osdiskname_prd'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
+            "caching": "None",
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Premium_LRS"
+            }
+          },
+          "dataDisks": [
+            {
+              "name": "[format('{0}{1}', parameters('datadiskname_prd'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
+              "diskSizeGB": 128,
+              "lun": 0,
+              "createOption": "Empty"
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('prod-server-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[range(0, parameters('numberOfInstances'))[copyIndex()]]))]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "nicNameprd"
+      ]
+    }
+  ]
+}
