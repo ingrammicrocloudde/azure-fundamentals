@@ -1,8 +1,8 @@
-# azure-fundamentals
+# azure-fundamentals Repo
 
 ## deploy-to-azure-button
 
-This repo show the experience of deploying an ARM template via a click of a button.
+This repo shows the experience of deploying an ARM template via a click of a button.
 
 ## ARM templates are deployed, not BICEP
 
