@@ -11,7 +11,7 @@
   "parameters": {
     "location": {
       "type": "string",
-      "defaultValue": "northeurope"
+      "defaultValue": "eastus2"
     },
     "adminUsername": {
       "type": "string",
