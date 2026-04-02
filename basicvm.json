@@ -41,13 +41,9 @@
       "type": "string",
       "defaultValue": "win11-23h2-pro",
       "allowedValues": [
-        "win11-22h2-pro",
-        "win11-23h2-pro"
+      	"win11-22h2-pro",
+      	"win11-23h2-pro"
       ]
-    },
-    "numberOfInstances": {
-      "type": "int",
-      "defaultValue": 1
     },
     "networkInterfaceName": {
       "type": "string",
@@ -55,11 +51,11 @@
     },
     "osdiskname_prd": {
       "type": "string",
-      "defaultValue": "prd_osdisk"
+      "defaultValue": "osdisk"
     },
     "datadiskname_prd": {
       "type": "string",
-      "defaultValue": "vmprd_datadisk"
+      "defaultValue": "datadisk"
     }
   },
   "variables": {
@@ -215,13 +211,9 @@
       ]
     },
     {
-      "copy": {
-        "name": "nicNameprd",
-        "count": "[length(range(0, parameters('numberOfInstances')))]"
-      },
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-11-01",
-      "name": "[format('client-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
+      "name": "[format('client-{0}', parameters('networkInterfaceName'))]",
       "location": "[parameters('location')]",
       "properties": {
         "ipConfigurations": [
@@ -249,20 +241,16 @@
       ]
     },
     {
-      "copy": {
-        "name": "serverprd",
-        "count": "[length(range(0, parameters('numberOfInstances')))]"
-      },
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2020-12-01",
-      "name": "[format('client{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
+      "name": "client",
       "location": "[parameters('location')]",
       "properties": {
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
-          "computerName": "[format('win11client-{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
+          "computerName": "win11client",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "windowsConfiguration": {
@@ -278,7 +266,7 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "[format('{0}{1}', parameters('osdiskname_prd'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
+            "name": "[parameters('osdiskname_prd')]",
             "caching": "None",
             "createOption": "FromImage",
             "managedDisk": {
@@ -287,7 +275,7 @@
           },
           "dataDisks": [
             {
-              "name": "[format('{0}{1}', parameters('datadiskname_prd'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
+              "name": "[parameters('datadiskname_prd')]",
               "diskSizeGB": 128,
               "lun": 0,
               "createOption": "Empty"
@@ -297,13 +285,13 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('client-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[range(0, parameters('numberOfInstances'))[copyIndex()]]))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('client-{0}', parameters('networkInterfaceName')))]"
             }
           ]
         }
       },
       "dependsOn": [
-        "nicNameprd"
+        "[resourceId('Microsoft.Network/networkInterfaces', format('client-{0}', parameters('networkInterfaceName')))]"
       ]
     }
   ]
