@@ -174,7 +174,7 @@ resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-05-01' = {
 //client vm  -> nic
 // create the nic
 resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = {
-  name: 'client-${networkInterfaceName}${i}'
+  name: 'client-${networkInterfaceName}'
   location: location
   dependsOn: [
     VnetName
@@ -204,14 +204,14 @@ resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = {
 
 // Create the Windows 11 client VM
 resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = {
-  name: 'client${i}'
+  name: 'client'
   location: location
   properties: {
     hardwareProfile: {
       vmSize: vmSize
     }
     osProfile: {
-      computerName: 'win11client-${i}'
+      computerName: 'win11client'
       adminUsername: adminUsername
       adminPassword: adminPassword
       windowsConfiguration: {
@@ -227,7 +227,7 @@ resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = {
         version: 'latest'
       }
       osDisk: {
-        name:'${osdiskname_prd}${i}'
+        name:'${osdiskname_prd}'
         caching: 'None'
         createOption: 'FromImage'
         managedDisk: {
@@ -236,7 +236,7 @@ resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = {
       }
       dataDisks: [
         {
-          name:'${datadiskname_prd}${i}'
+          name:'${datadiskname_prd}'
           diskSizeGB: 128
           lun: 0
           createOption: 'Empty'
