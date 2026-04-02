@@ -169,7 +169,7 @@ resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-05-01' = {
 //client vm
 // create the nic
 resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = [for i in range(0, numberOfInstances):{
-  name: 'prod-client-${networkInterfaceName}${i}'
+  name: 'client-${networkInterfaceName}${i}'
   location: location
   dependsOn: [
     VnetName

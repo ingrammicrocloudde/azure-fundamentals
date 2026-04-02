@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.41.2.15936",
-      "templateHash": "13513740387811257221"
+      "templateHash": "17576027366666078278"
     }
   },
   "parameters": {
@@ -221,7 +221,7 @@
       },
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-11-01",
-      "name": "[format('prod-client-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
+      "name": "[format('client-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
       "location": "[parameters('location')]",
       "properties": {
         "ipConfigurations": [
@@ -297,7 +297,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('prod-client-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[range(0, parameters('numberOfInstances'))[copyIndex()]]))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('client-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[range(0, parameters('numberOfInstances'))[copyIndex()]]))]"
             }
           ]
         }
