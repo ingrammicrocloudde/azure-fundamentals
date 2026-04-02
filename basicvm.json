@@ -4,14 +4,14 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.29.47.4906",
-      "templateHash": "13363929220794202032"
+      "version": "0.41.2.15936",
+      "templateHash": "17576027366666078278"
     }
   },
   "parameters": {
     "location": {
       "type": "string",
-      "defaultValue": "eastus2"
+      "defaultValue": "germanywestcentral"
     },
     "adminUsername": {
       "type": "string",
@@ -27,22 +27,22 @@
     },
     "vmSize": {
       "type": "string",
-      "defaultValue": "Standard_D2s_v5"
+      "defaultValue": "Standard_D4s_v5"
     },
     "imagePublisher": {
       "type": "string",
-      "defaultValue": "MicrosoftWindowsServer"
+      "defaultValue": "MicrosoftWindowsDesktop"
     },
     "imageOffer": {
       "type": "string",
-      "defaultValue": "WindowsServer"
+      "defaultValue": "Windows-11"
     },
     "imageSKU": {
       "type": "string",
-      "defaultValue": "2022-Datacenter",
+      "defaultValue": "win11-23h2-pro",
       "allowedValues": [
-        "2019-Datacenter",
-        "2022-Datacenter"
+        "win11-22h2-pro",
+        "win11-23h2-pro"
       ]
     },
     "numberOfInstances": {
@@ -55,11 +55,11 @@
     },
     "osdiskname_prd": {
       "type": "string",
-      "defaultValue": "osdisk"
+      "defaultValue": "prd_osdisk"
     },
     "datadiskname_prd": {
       "type": "string",
-      "defaultValue": "datadisk"
+      "defaultValue": "vmprd_datadisk"
     }
   },
   "variables": {
@@ -84,6 +84,59 @@
   },
   "resources": [
     {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2024-01-01",
+      "name": "networkSecurityGroup",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": "[variables('nsgrules').securityrules]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "natGatewayPublicIP",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "type": "Microsoft.Network/natGateways",
+      "apiVersion": "2023-05-01",
+      "name": "natGateway",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIpAddresses": [
+          {
+            "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'natGatewayPublicIP')]"
+          }
+        ],
+        "idleTimeoutInMinutes": 4
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'natGatewayPublicIP')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "vpnGatewayPublicIP",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
       "type": "Microsoft.Network/virtualNetworks",
       "apiVersion": "2023-05-01",
       "name": "Vnet03",
@@ -107,21 +160,59 @@
         "addressPrefix": "10.3.0.0/24",
         "networkSecurityGroup": {
           "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'networkSecurityGroup')]"
+        },
+        "natGateway": {
+          "id": "[resourceId('Microsoft.Network/natGateways', 'natGateway')]"
         }
       },
       "dependsOn": [
+        "[resourceId('Microsoft.Network/natGateways', 'natGateway')]",
         "[resourceId('Microsoft.Network/networkSecurityGroups', 'networkSecurityGroup')]",
         "[resourceId('Microsoft.Network/virtualNetworks', 'Vnet03')]"
       ]
     },
     {
-      "type": "Microsoft.Network/networkSecurityGroups",
-      "apiVersion": "2023-11-01",
-      "name": "networkSecurityGroup",
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', 'Vnet03', 'GatewaySubnet')]",
+      "properties": {
+        "addressPrefix": "10.3.1.0/27"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'Vnet03', 'serversubnet')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', 'Vnet03')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "apiVersion": "2023-05-01",
+      "name": "vpnGateway",
       "location": "[parameters('location')]",
       "properties": {
-        "securityRules": "[variables('nsgrules').securityrules]"
-      }
+        "gatewayType": "Vpn",
+        "vpnType": "RouteBased",
+        "sku": {
+          "name": "VpnGw1",
+          "tier": "VpnGw1"
+        },
+        "ipConfigurations": [
+          {
+            "name": "vpnGatewayIpConfig",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', 'vpnGatewayPublicIP')]"
+              },
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'Vnet03', 'GatewaySubnet')]"
+              }
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', 'Vnet03', 'GatewaySubnet')]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', 'vpnGatewayPublicIP')]"
+      ]
     },
     {
       "copy": {
@@ -130,7 +221,7 @@
       },
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2020-11-01",
-      "name": "[format('prod-server-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
+      "name": "[format('client-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[copyIndex()])]",
       "location": "[parameters('location')]",
       "properties": {
         "ipConfigurations": [
@@ -159,19 +250,19 @@
     },
     {
       "copy": {
-        "name": "server",
+        "name": "serverprd",
         "count": "[length(range(0, parameters('numberOfInstances')))]"
       },
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2020-12-01",
-      "name": "[format('server{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
+      "name": "[format('client{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
       "location": "[parameters('location')]",
       "properties": {
         "hardwareProfile": {
           "vmSize": "[parameters('vmSize')]"
         },
         "osProfile": {
-          "computerName": "[format('prdsrv-{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
+          "computerName": "[format('win11client-{0}', range(0, parameters('numberOfInstances'))[copyIndex()])]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "windowsConfiguration": {
@@ -206,7 +297,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('prod-server-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[range(0, parameters('numberOfInstances'))[copyIndex()]]))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', format('client-{0}{1}', parameters('networkInterfaceName'), range(0, parameters('numberOfInstances'))[range(0, parameters('numberOfInstances'))[copyIndex()]]))]"
             }
           ]
         }
