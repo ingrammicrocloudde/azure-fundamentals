@@ -3,8 +3,8 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "location": {
-            "value": "northeurope"
-       },
+            "value": "germanywestcentral"
+        },
         "adminUsername": {
             "value": "azureuser"
         },
@@ -12,16 +12,16 @@
             "value": "deletemelater123"
         },
         "vmSize": {
-            "value": "Standard_D2s_v5"
+            "value": "Standard_D4s_v5"
         },
         "imagePublisher": {
-            "value": "MicrosoftWindowsServer"
+            "value": "MicrosoftWindowsDesktop"
         },
         "imageOffer": {
-            "value": "WindowsServer"
+            "value": "Windows-11"
         },
         "imageSKU": {
-            "value": "2022-Datacenter"
+            "value": "win11-23h2-pro"
         },
         "numberOfInstances": {
             "value": 1

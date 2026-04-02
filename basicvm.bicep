@@ -1,5 +1,5 @@
 // params general
-param location string = 'northeurope'
+param location string = 'germanywestcentral'
 // params & vars for Servers
 
 @description('The name of the Administrator of the new VM and Domain')
@@ -8,15 +8,15 @@ param adminUsername string
 @secure()
 param adminPassword string 
 
-param vmSize string =  'Standard_D2s_v5'
-param imagePublisher string = 'MicrosoftWindowsServer'
-param imageOffer string = 'WindowsServer'
+param vmSize string = 'Standard_D4s_v5'
+param imagePublisher string = 'MicrosoftWindowsDesktop'
+param imageOffer string = 'Windows-11'
 @allowed([
-  '2019-Datacenter'
-  '2022-Datacenter'
+  'win11-22h2-pro'
+  'win11-23h2-pro'
 ])
-param imageSKU string =  '2022-Datacenter'
-param numberOfInstances int =1
+param imageSKU string = 'win11-23h2-pro'
+param numberOfInstances int = 1
 param networkInterfaceName string = 'nic'
 param osdiskname_prd string = 'prd_osdisk' 
 param datadiskname_prd string = 'vmprd_datadisk'
@@ -41,8 +41,56 @@ var nsgrules = {
   ]
 }
 
+resource nsg 'Microsoft.Network/networkSecurityGroups@2024-01-01' = {
+  name: 'networkSecurityGroup'
+  location: location
+  properties: {
+    securityRules: nsgrules.securityrules
+  }
+}
 
-//hubnet including subnet
+// NAT Gateway public IP
+resource natGatewayPublicIP 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
+  name: 'natGatewayPublicIP'
+  location: location
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    publicIPAllocationMethod: 'Static'
+  }
+}
+
+// NAT Gateway
+resource natGateway 'Microsoft.Network/natGateways@2023-05-01' = {
+  name: 'natGateway'
+  location: location
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    publicIpAddresses: [
+      {
+        id: natGatewayPublicIP.id
+      }
+    ]
+    idleTimeoutInMinutes: 4
+  }
+}
+
+// VPN Gateway public IP
+resource vpnGatewayPublicIP 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
+  name: 'vpnGatewayPublicIP'
+  location: location
+  sku: {
+    name: 'Standard'
+  }
+  properties: {
+    publicIPAllocationMethod: 'Static'
+  }
+}
+
+//hubnet including subnets
 resource VnetName 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   name: 'Vnet03'
   location: location
@@ -52,61 +100,92 @@ resource VnetName 'Microsoft.Network/virtualNetworks@2023-05-01' = {
         '10.3.0.0/16'
       ]
     }
-    subnets: [
-    
-    ]
+    subnets: []
     enableDdosProtection: false
     enableVmProtection: true
-    }
+  }
 }
+
 resource serversubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
   name: 'serversubnet'
-  parent: VnetName 
+  parent: VnetName
   dependsOn: [
     VnetName
+    natGateway
   ]
-    properties: {
-      addressPrefix: '10.3.0.0/24'
-      networkSecurityGroup: {
-        id: nsg.id
-      }
+  properties: {
+    addressPrefix: '10.3.0.0/24'
+    networkSecurityGroup: {
+      id: nsg.id
     }
- 
+    natGateway: {
+      id: natGateway.id
+    }
+  }
 }
-resource nsg 'Microsoft.Network/networkSecurityGroups@2024-01-01' = {
-  name: 'networkSecurityGroup'
+
+// GatewaySubnet required by VPN Gateway (no NSG or NAT gateway allowed)
+resource gatewaySubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
+  name: 'GatewaySubnet'
+  parent: VnetName
+  dependsOn: [
+    serversubnet
+  ]
+  properties: {
+    addressPrefix: '10.3.1.0/27'
+  }
+}
+
+// VPN Gateway
+resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-05-01' = {
+  name: 'vpnGateway'
   location: location
   properties: {
-    securityRules: nsgrules.securityrules
+    gatewayType: 'Vpn'
+    vpnType: 'RouteBased'
+    sku: {
+      name: 'VpnGw1'
+      tier: 'VpnGw1'
+    }
+    ipConfigurations: [
+      {
+        name: 'vpnGatewayIpConfig'
+        properties: {
+          publicIPAddress: {
+            id: vpnGatewayPublicIP.id
+          }
+          subnet: {
+            id: gatewaySubnet.id
+          }
+        }
+      }
+    ]
   }
   dependsOn: [
-
+    gatewaySubnet
   ]
 }
 
-//servers
-//prdserver
-// create the prd nic
+//client vm
+// create the nic
 resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = [for i in range(0, numberOfInstances):{
-  name: 'prod-server-${networkInterfaceName}${i}'
+  name: 'prod-client-${networkInterfaceName}${i}'
   location: location
   dependsOn: [
     VnetName
     serversubnet
-   ]
+  ]
   properties: {
     ipConfigurations: [
       {
         name: 'ipconfig1'
         properties: {
-          
           privateIPAllocationMethod: 'Dynamic'
           subnet: {
             id: serversubnet.id
           }
           primary: true
           privateIPAddressVersion: 'IPv4'
-
         }
       }
     ]
@@ -116,20 +195,18 @@ resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = [for i in
     enableAcceleratedNetworking: false
     enableIPForwarding: true
   }
-  
- }
-]
+}]
 
-// Create the prd vm
+// Create the Windows 11 client VM
 resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = [for i in range(0, numberOfInstances):{
-  name: 'serverprd${i}'
+  name: 'client${i}'
   location: location
   properties: {
     hardwareProfile: {
       vmSize: vmSize
     }
     osProfile: {
-      computerName: 'prdsrv-${i}'
+      computerName: 'win11client-${i}'
       adminUsername: adminUsername
       adminPassword: adminPassword
       windowsConfiguration: {
@@ -171,9 +248,5 @@ resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = [for i in ra
   }
   dependsOn: [
     nicNameprd
-    
   ]
- }
-]
-
-
+}]
