@@ -16,10 +16,9 @@ param imageOffer string = 'Windows-11'
   'win11-23h2-pro'
 ])
 param imageSKU string = 'win11-23h2-pro'
-param numberOfInstances int = 1
 param networkInterfaceName string = 'nic'
-param osdiskname_prd string = 'prd_osdisk' 
-param datadiskname_prd string = 'vmprd_datadisk'
+param osdiskname_prd string = 'osdisk' 
+param datadiskname_prd string = 'datadisk'
 
 //general nsg rules = allowing ping
 var nsgrules = {
@@ -76,6 +75,9 @@ resource natGateway 'Microsoft.Network/natGateways@2023-05-01' = {
     ]
     idleTimeoutInMinutes: 4
   }
+  dependsOn: [
+    gatewaySubnet
+  ]
 }
 
 // VPN Gateway public IP
@@ -122,6 +124,9 @@ resource serversubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
       id: natGateway.id
     }
   }
+  dependsOn: [
+    VnetName
+  ]
 }
 
 // GatewaySubnet required by VPN Gateway (no NSG or NAT gateway allowed)
@@ -166,9 +171,9 @@ resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-05-01' = {
   ]
 }
 
-//client vm
+//client vm  -> nic
 // create the nic
-resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = [for i in range(0, numberOfInstances):{
+resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = {
   name: 'client-${networkInterfaceName}${i}'
   location: location
   dependsOn: [
@@ -198,7 +203,7 @@ resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = [for i in
 }]
 
 // Create the Windows 11 client VM
-resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = [for i in range(0, numberOfInstances):{
+resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = {
   name: 'client${i}'
   location: location
   properties: {
