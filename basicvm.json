@@ -39,10 +39,10 @@
     },
     "imageSKU": {
       "type": "string",
-      "defaultValue": "win11-23h2-pro",
+      "defaultValue": "win11-24h2-pro",
       "allowedValues": [
-      	"win11-22h2-pro",
-      	"win11-23h2-pro"
+      	"win11-23h2-pro",
+      	"win11-24h2-pro"
       ]
     },
     "networkInterfaceName": {
