@@ -15,7 +15,7 @@ param imageOffer string = 'Windows-11'
   'win11-22h2-pro'
   'win11-23h2-pro'
 ])
-param imageSKU string = 'win11-23h2-pro'
+param imageSKU string = 'win11-24h2-pro'
 param networkInterfaceName string = 'nic'
 param osdiskname_prd string = 'osdisk' 
 param datadiskname_prd string = 'datadisk'
@@ -80,16 +80,24 @@ resource natGateway 'Microsoft.Network/natGateways@2023-05-01' = {
   ]
 }
 
-// VPN Gateway public IP
+// VPN Gateway public IP (zone-redundant Standard SKU)
 resource vpnGatewayPublicIP 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
   name: 'vpnGatewayPublicIP'
   location: location
   sku: {
     name: 'Standard'
+    tier: 'Regional'
   }
   properties: {
     publicIPAllocationMethod: 'Static'
+    publicIPAddressVersion: 'IPv4'
   }
+  // Zone-redundant across zones 1/2/3
+  zones: [
+    '1'
+    '2'
+    '3'
+  ]
 }
 
 //hubnet including subnets
