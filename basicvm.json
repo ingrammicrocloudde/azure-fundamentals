@@ -121,17 +121,24 @@
       ]
     },
     {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "apiVersion": "2023-05-01",
-      "name": "vpnGatewayPublicIP",
-      "location": "[parameters('location')]",
-      "sku": {
-        "name": "Standard"
-      },
-      "properties": {
-        "publicIPAllocationMethod": "Static"
-      }
-    },
+  "type": "Microsoft.Network/publicIPAddresses",
+  "apiVersion": "2023-05-01",
+  "name": "vpnGatewayPublicIP",
+  "location": "[parameters('location')]",
+  "sku": {
+    "name": "Standard",
+    "tier": "Regional"
+  },
+  "properties": {
+    "publicIPAllocationMethod": "Static",
+    "publicIPAddressVersion": "IPv4"
+  },
+  "zones": [
+    "1",
+    "2",
+    "3"
+  ]
+},
     {
       "type": "Microsoft.Network/virtualNetworks",
       "apiVersion": "2023-05-01",
