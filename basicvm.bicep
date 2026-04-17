@@ -149,8 +149,8 @@ resource vpnGateway 'Microsoft.Network/virtualNetworkGateways@2023-05-01' = {
     gatewayType: 'Vpn'
     vpnType: 'RouteBased'
     sku: {
-      name: 'VpnGw1'
-      tier: 'VpnGw1'
+      name: 'VpnGw1AZ'
+      tier: 'VpnGw1AZ'
     }
     ipConfigurations: [
       {
