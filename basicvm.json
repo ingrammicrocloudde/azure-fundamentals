@@ -187,10 +187,10 @@
       "properties": {
         "gatewayType": "Vpn",
         "vpnType": "RouteBased",
-        "sku": {
-          "name": "VpnGw1",
-          "tier": "VpnGw1"
-        },
+       "sku": {
+              "name": "VpnGw1AZ",
+               "tier": "VpnGw1AZ"
+              },
         "ipConfigurations": [
           {
             "name": "vpnGatewayIpConfig",
