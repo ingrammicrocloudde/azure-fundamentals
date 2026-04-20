@@ -12,10 +12,10 @@ param vmSize string = 'Standard_D4s_v5'
 param imagePublisher string = 'MicrosoftWindowsDesktop'
 param imageOffer string = 'Windows-11'
 @allowed([
-  'win11-22h2-pro'
   'win11-23h2-pro'
+  'win11-24h2-pro'
 ])
-param imageSKU string = 'win11-23h2-pro'
+param imageSKU string = 'win11-24h2-pro'
 param networkInterfaceName string = 'nic'
 param osdiskname_prd string = 'osdisk' 
 param datadiskname_prd string = 'datadisk'
@@ -75,9 +75,6 @@ resource natGateway 'Microsoft.Network/natGateways@2023-05-01' = {
     ]
     idleTimeoutInMinutes: 4
   }
-  dependsOn: [
-    gatewaySubnet
-  ]
 }
 
 // VPN Gateway public IP
@@ -116,10 +113,6 @@ resource VnetName 'Microsoft.Network/virtualNetworks@2023-05-01' = {
 resource serversubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
   name: 'serversubnet'
   parent: VnetName
-  dependsOn: [
-    VnetName
-    natGateway
-  ]
   properties: {
     addressPrefix: '10.3.0.0/24'
     networkSecurityGroup: {
@@ -129,9 +122,6 @@ resource serversubnet 'Microsoft.Network/virtualNetworks/subnets@2022-07-01' = {
       id: natGateway.id
     }
   }
-  dependsOn: [
-    VnetName
-  ]
 }
 
 // GatewaySubnet required by VPN Gateway (no NSG or NAT gateway allowed)
@@ -207,7 +197,7 @@ resource nicNameprd 'Microsoft.Network/networkInterfaces@2020-11-01' = {
     enableAcceleratedNetworking: false
     enableIPForwarding: true
   }
-}]
+}
 
 // Create the Windows 11 client VM
 resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = {
@@ -253,7 +243,7 @@ resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = {
     networkProfile: {
       networkInterfaces: [
         {
-          id: nicNameprd[i].id
+          id: nicNameprd.id
         }
       ]
     }
@@ -261,4 +251,4 @@ resource serverprd 'Microsoft.Compute/virtualMachines@2020-12-01' = {
   dependsOn: [
     nicNameprd
   ]
-}]
+}

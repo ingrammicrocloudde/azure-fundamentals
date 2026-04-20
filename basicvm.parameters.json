@@ -21,10 +21,7 @@
             "value": "Windows-11"
         },
         "imageSKU": {
-            "value": "win11-23h2-pro"
-        },
-        "numberOfInstances": {
-            "value": 1
+            "value": "win11-24h2-pro"
         },
         "networkInterfaceName": {
             "value": "nic"

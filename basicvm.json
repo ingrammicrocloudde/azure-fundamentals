@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.41.2.15936",
-      "templateHash": "17576027366666078278"
+      "version": "0.38.33.27573",
+      "templateHash": "6584505055202418981"
     }
   },
   "parameters": {
@@ -41,8 +41,8 @@
       "type": "string",
       "defaultValue": "win11-24h2-pro",
       "allowedValues": [
-      	"win11-23h2-pro",
-      	"win11-24h2-pro"
+        "win11-23h2-pro",
+        "win11-24h2-pro"
       ]
     },
     "networkInterfaceName": {
@@ -121,24 +121,22 @@
       ]
     },
     {
-  "type": "Microsoft.Network/publicIPAddresses",
-  "apiVersion": "2023-05-01",
-  "name": "vpnGatewayPublicIP",
-  "location": "[parameters('location')]",
-  "sku": {
-    "name": "Standard",
-    "tier": "Regional"
-  },
-  "properties": {
-    "publicIPAllocationMethod": "Static",
-    "publicIPAddressVersion": "IPv4"
-  },
-  "zones": [
-    "1",
-    "2",
-    "3"
-  ]
-},
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-05-01",
+      "name": "vpnGatewayPublicIP",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard"
+      },
+      "zones": [
+        "1",
+        "2",
+        "3"
+      ],
+      "properties": {
+        "publicIPAllocationMethod": "Static"
+      }
+    },
     {
       "type": "Microsoft.Network/virtualNetworks",
       "apiVersion": "2023-05-01",
@@ -194,10 +192,12 @@
       "properties": {
         "gatewayType": "Vpn",
         "vpnType": "RouteBased",
-       "sku": {
-              "name": "VpnGw1AZ",
-               "tier": "VpnGw1AZ"
-              },
+        "sku": {
+          "name": "VpnGw1AZ",
+          "tier": "VpnGw1AZ"
+        },
+        "activeActive": false,
+        "enableBgp": false,
         "ipConfigurations": [
           {
             "name": "vpnGatewayIpConfig",
@@ -273,7 +273,7 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "[parameters('osdiskname_prd')]",
+            "name": "[format('{0}', parameters('osdiskname_prd'))]",
             "caching": "None",
             "createOption": "FromImage",
             "managedDisk": {
@@ -282,7 +282,7 @@
           },
           "dataDisks": [
             {
-              "name": "[parameters('datadiskname_prd')]",
+              "name": "[format('{0}', parameters('datadiskname_prd'))]",
               "diskSizeGB": 128,
               "lun": 0,
               "createOption": "Empty"
